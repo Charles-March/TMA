@@ -50,22 +50,29 @@ plt.close('all')
 
    
 #img = data.astronaut()
-def compression(N,M):
-    img=io.imread('Im3Comp100.jpg')
+
+
+def Q(i,j,compression):
+    return (1+((1+i+j)*compression))
+
+def Fq(f,u,v,compression):
+    return (np.round(f(u,v)/Q(u,v,compression)))
+
+"""
+@param 
+    N*M : size of the blocks
+    imgPath : local path to the img
+@return
+    dctArray : a N*M*(img_size[0]/N)*(img_size[1]/M) array corresponding to the dct of each N*M blocks of the picture.
+"""
+def dctBlocks(N,M,imgPath):
+    img=io.imread(imgPath)
     img_gray = rgb2gray(img)
     img_gray=sk.img_as_float(img_gray)
     plt.figure(1)
     plt.imshow(img_gray,cmap='gray')
     plt.show()
-    
-    
-    window_size = (N,M)
-    img_size=img_gray.shape
-    
-    
-    
-    
-    
+    img_size=img_gray.shape    
     range_x= int(img_size[0]/N)
     range_y= int(img_size[1]/M)
     blocksSize = (range_x,range_y,N,M)
@@ -78,34 +85,21 @@ def compression(N,M):
                     dctblocks[i][j][k][l]= img_gray[i*N + k][j*M + l]
             dctArray[i][j]=dct2(dctblocks[i][j])
             
-    ImgNew = np.zeros(img_size)        
-    
-    for i in range(range_x):
-        for j in range(range_y):
-            for k in range(N):
-                for l in range(M):
-                    ImgNew[i*N + k][j*M + l]=dctArray[i][j][k][l]
-    
-    """
-    dctblock=np.zeros(img_size)
-    dctblock=dct2(img_gray)
-           
-    """
-    
-    blocseul = dctblocks[0][2]
-    blocDctSeul = dctArray[0][2]
-    blocidctseul = idct2(blocDctSeul)
-    
-    plt.figure(3)
-    plt.imshow(np.log(1.0+ImgNew),cmap='gray')
-    plt.show()
-    
-    newim=np.zeros(img_size)
-    
-    
+    return (dctArray,img_size)
+"""
+@param
+    dctArray : a N*M*(img_size[0]/N)*(img_size[1]/M) array corresponding to the dct of each N*M blocks of the picture.
+    N*M : size of each block
+    img_size : starting size of the img
+@return
+    finalImg : the img uncompressed
+"""
+def recompression(dctArray,N,M,img_size):
     finalImg = np.zeros(img_size)
+    range_x= int(img_size[0]/N)
+    range_y= int(img_size[1]/M)
     for i in range(range_x):
-        temping = np.zeros((N,M))
+        #   temping = np.zeros((N,M))
         for j in range(range_y):
             tempimg = idct2(dctArray[i][j])
             #psnr=measure.compare_psnr(dctblocks[i][j],tempimg,1.0)
@@ -113,41 +107,88 @@ def compression(N,M):
             #tempimg=np.ubyte(np.round(255.0*tempimg,0))
             for k in range(N):
                 for l in range(M):
-                    finalImg[i*N + k][j*M +l]=(tempimg[k][l])
-                
+                    finalImg[i*N + k][j*M +l]=(tempimg[k][l]) 
+    return finalImg
+
+"""
+@param
+    dctArray : a N*M*(img_size[0]/N)*(img_size[1]/M) array corresponding to the dct of each N*M blocks of the picture.
+    N*M : size of each block
+    img_size : starting size of the img
+@return
+    dctImg : the img which represent all the dctblocks in one img
+"""
+def concatDct(dctArray,N,M,img_size):
+    dctImg = np.zeros(img_size)        
+    range_x= int(img_size[0]/N)
+    range_y= int(img_size[1]/M)
+    for i in range(range_x):
+        for j in range(range_y):
+            for k in range(N):
+                for l in range(M):
+                    dctImg[i*N + k][j*M + l]=dctArray[i][j][k][l]
+    return dctImg
+
+"""
+create a new file called file_name and write inside the content of file
+@param
+    file : the content to write
+    file_name : the name of the file that will be created / overwritted
+"""
+def exportfile(file,file_name):
+    fich=open(file_name,'wb')
+    fich.write(file) 
+    fich.close()
     
-    """finalImg = np.zeros(img_size)
-    for i in range(0,img_size[0],N):
-        for j in range(0,img_size[1],M):
-            finalImg[i][j]="""
-    #newim=idct2(dctblocks)
-    """
-    psnr=measure.compare_psnr(img_gray,newim,1.0)
-    ssim=measure.compare_ssim(img_gray,newim)
-    newim=np.ubyte(np.round(255.0*newim,0))
-    """
+def exportInBinary(file,file_name):
+    fich=open(file_name)
+    fich.write(np.reshape(file,-1)) 
+    fich.close()
+    
+"""
+print the file defined by imgPath
+cut the picture defined by imgPath into multiples N*M blocks
+calculate the dct of each block
+print the dctblocks
+recombine the dctblocks into the base picture and print the new picture
+store the dctblocks in a file called 'dct4.dat' for a 4*4 cut
+store the new picture in a file called 'essai4.jpeg' for a 4*4 cut
+
+@param
+    N*M : size of each block
+    imgPath : the local path to the img
+"""
+
+def compression(N,M,imgPath):
+    (dctArray,img_size)=dctBlocks(N,M,imgPath)
+    ImgNew = concatDct(dctArray,N,M,img_size)
+    exportfile(ImgNew,"dct"+str(N)+".dat")
+    plt.figure(3)
+    print("taille : "+str(N) +" "+str(M))
+    plt.imshow(np.log(1.0+ImgNew),cmap='gray')
+    plt.show()
+    finalImg =recompression(dctArray,N,M,img_size)
     plt.figure(4)
     
+ 
     #remettre le type des données ici entre 0 et 255 donc uint8
     plt.imshow(finalImg,cmap='gray')
     plt.show()
     
-    fich=open('madct.dat','wb')
+    fich=open('madct'+str(N)+'.dat','wb')
     fich.write(np.reshape(finalImg,-1)) 
     #on étend le tableau en 1D pour pouvoir enregistrer chaque octet
     fich.close()
     
-    
-    
     #pour sauver l'image en format jpeg pour une qualité voulue
-    monIm=pil.Image.fromarray(np.ubyte(np.round(255.0*img_gray,0)))
-    monIm.save('essai.jpeg',quality=20)
-    monImlu=pil.Image.open("essai.jpeg")
-    print( "taille= ",os.path.getsize("essai.jpeg"), "en octet")
-    print("compression =", 1.0*img_size[0]*img_size[1]/os.path.getsize("essai.jpeg"))
+    finalImg=pil.Image.fromarray(np.ubyte(np.round(255.0*finalImg,0)))
+    finalImg.save('essai'+str(N)+'.jpeg')
+    monImlu=pil.Image.open("essai"+str(N)+'.jpeg')
+    print( "taille= ",os.path.getsize("essai"+str(N)+'.jpeg'), "en octet")
+    print("compression =", 1.0*img_size[0]*img_size[1]/os.path.getsize("essai"+str(N)+'.jpeg'))
 
-compression(4,4)
-compression(8,8)
-compression(16,16)
-compression(64,64)
+compression(4,4,"horse.bmp")
+compression(8,8,"horse.bmp")
+compression(16,16,"horse.bmp")
+compression(64,64,"horse.bmp")
 
