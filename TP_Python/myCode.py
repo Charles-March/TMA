@@ -336,18 +336,156 @@ def jpegQualityInfluence(startingValue,maxValue,step,img):
     plt.ylabel('compression_rate / psnr')
     plt.show()
 
-def compareQualityInfluence():
-    print("Influence de la qualite sur le psnr pour NOTRE methode")
-    ourQualityInfluence(1,100,1,64,64,"horse.bmp")
-    print("Influence de la qualite sur le psnr pour la compression JPEG")
-    jpegQualityInfluence(1,100,1,"horse.bmp")
+def compareQualityInfluence(our,jpeg):
+    if(our):
+        print("\n\n\nInfluence de la qualite sur le psnr pour NOTRE methode")
+        ourQualityInfluence(1,100,1,64,64,"horse.bmp")
+    if(jpeg):
+        print("\n\n\nInfluence de la qualite sur le psnr pour la compression JPEG")
+        jpegQualityInfluence(1,100,1,"horse.bmp")
 
+def getName(name,number,ext):
+    n=name
+    if(number<10):
+        n=n+str(0)+str(number)
+    else:
+        n=n+str(number)
+    return n+"."+ext
+
+def getGray(name):
+    img= io.imread(name)
+    gray= rgb2gray(img)
+    gray = sk.img_as_float(gray)
+    return gray
+
+def getGrayfromNumber(name,number,ext):
+    return getGray(getName(name,number,ext))
+
+def eq(value1,value2):
+    return (value1==value2)
+
+
+
+def calculVecteurDeplacement(img0,img1,fun):
+    img_size = img0.shape
+    potentialVector = []
+    count=0
+    for i in range(0,img_size[0]):
+        for j in range(0,img_size[1]):
+            if(not(img1[i][j]==img0[i][j])):
+                b = 1
+                for k in range(1,16):
+                    for l in range (1,16):
+                        if((i-k)>0 and b):
+                            if((j-l)>0):
+                                if(fun(img1[i-k][j-l],img0[i][j])):
+                                    potentialVector.append([])
+                                    potentialVector[count].append(i)
+                                    potentialVector[count].append(j)
+                                    potentialVector[count].append(i-k)
+                                    potentialVector[count].append(j-l)
+                                    potentialVector[count].append(k+l)
+                                    count=count+1
+                                    b = 0
+                            if((j+l)<img_size[1]):
+                                if(fun(img1[i-k][j+l],img0[i][j])):
+                                    potentialVector.append([])
+                                    potentialVector[count].append(i)
+                                    potentialVector[count].append(j)
+                                    potentialVector[count].append(i-k)
+                                    potentialVector[count].append(j+l)
+                                    potentialVector[count].append(k+l)
+                                    count=count+1
+                                    b = 0
+                        if((i+k)<img_size[0] and b):
+                            if((j-l)>0):
+                                if(fun(img1[i+k][j-l],img0[i][j])):
+                                    potentialVector.append([])
+                                    potentialVector[count].append(i)
+                                    potentialVector[count].append(j)
+                                    potentialVector[count].append(i+k)
+                                    potentialVector[count].append(j-l)
+                                    potentialVector[count].append(k+l)
+                                    count=count+1
+                                    b = 0 
+                            if((j+l)<img_size[1]):
+                                if(fun(img1[i+k][j+l],img0[i][j])):
+                                    potentialVector.append([])
+                                    potentialVector[count].append(i)
+                                    potentialVector[count].append(j)
+                                    potentialVector[count].append(i+k)
+                                    potentialVector[count].append(j+l)
+                                    potentialVector[count].append(k+l)
+                                    count=count+1
+                                    b = 0 
+    return potentialVector
+
+def find(value,tab):
+    for i in range(0,len(tab)):
+        if(tab[i][2]==value[0] and tab[i][3]==value[1]):
+            return i
+    return -1
+
+def CombineNext(lastImg,movement):
+    
+def distFromIndex(i,j,i2,j2):
+    return (np.abs(i-i2) + np.abs(j-j2))
+    
+def dist(value1,value2):
+    
+
+def defineNext(MovementList):
+    size = len(MovementList)
+    if(size>0):
+        valid = []
+        for i in range(1,size):
+            #each VectorList
+            if(valid==[]):    
+                valid = ValidateMovement(MovementList[i-1],MovementList[i])
+            else:
+                valid = ValidateMovement(valid,MovementList[i])
+    return valid
+            
+def ValidateMovement(vector1,vector2):
+    valid = []
+    count = 0
+    for i in range(0,len(vector2)):
+        value = vector2[i]
+        index =find(value,vector1)
+        if(index != -1):
+            valid.append([])
+            valid[count].append(vector2[i][0])
+            valid[count].append(vector2[i][1])
+            valid[count].append(vector2[i][2])
+            valid[count].append(vector2[i][3])
+            valid[count].append((vector2[i][4]+vector1[index][4])/2)
+            count=count+1
+            
+    return valid
+        
+
+def compressionVideo(name,ext,imgCount,quality,N,M):
+    img0 = getGrayfromNumber(name,0,ext)
+    img1 = getGrayfromNumber(name,1,ext)
+    img2 = getGrayfromNumber(name,2,ext)
+    VecteurMouvement1 = calculVecteurDeplacement(img0,img1,eq)
+    VecteurMouvement2 = calculVecteurDeplacement(img1,img2,eq)
+    
+    if(len(VecteurMouvement1)==0):
+        print("aucun vecteur de mouvement trouvé entre "+getName(name,0)+" et "+getName(name,1))
+        return ;
+    print("Nombre de mouvements détectés : " + str(len(VecteurMouvement)))
+    
+"""
 compression(4,4,"horse.bmp",2,1)    
 compression(8,8,"horse.bmp",2,1) 
 compression(16,16,"horse.bmp",2,1) 
 compression(64,64,"horse.bmp",2,1) 
+"""
 
-compareQualityInfluence()
+#compression(4,4,"horse.bmp",1,1)
+#compareQualityInfluence(0,1)
+compressionVideo("taxi_","bmp",20,1,16,16)
 
 """
 Q4 (compression):
@@ -357,5 +495,7 @@ Q4 (compression):
         taille de l'image bmp compressee : 199 824
     199824/83000 = 2.4
 """
+
+
 
 print("execution ended")
