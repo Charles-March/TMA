@@ -458,7 +458,7 @@ def ValidateMovement(vector1,vector2):
             valid[count].append(vector2[i][1])
             valid[count].append(vector2[i][2])
             valid[count].append(vector2[i][3])
-            valid[count].append((vector2[i][4]+vector1[index][4])/2)
+            valid[count].append((vector2[i][4]+vector1[index][4])/2)    
             count=count+1
             
     return valid
