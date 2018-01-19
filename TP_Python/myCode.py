@@ -427,24 +427,36 @@ def find(value,tab):
     return -1
 
 def CombineNext(lastImg,movement):
-    
-def distFromIndex(i,j,i2,j2):
-    return (np.abs(i-i2) + np.abs(j-j2))
-    
-def dist(value1,value2):
-    
+    newImg = np.copy(lastImg)
+    img_size = lastImg.shape
+    for i in range(0,len(movement)):
+        deltaX = np.abs(movement[i][0]-movement[i][2])
+        deltaY = np.abs(movement[i][1] - movement[i][3])
+        coef = deltaX / deltaY
+        lastImg[movement[i][2]][movement[i][3]]
+        newValX = int( (movement[i][4]*(coef))+movement[i][4] )
+        newValY = int( (movement[i][4]*(1/coef))+movement[i][3] )
+        if(newValX>=0 and newValX<img_size[0] and newValY>=0 and newValY<img_size[1]):
+            newImg[newValX][newValY] = lastImg[movement[i][2]][movement[i][3]]
+        
+    return newImg
 
 def defineNext(MovementList):
     size = len(MovementList)
+    validList=[]
+    print("tentative de prédiction avec "+str(size)+" imgs")
     if(size>0):
         valid = []
         for i in range(1,size):
             #each VectorList
-            if(valid==[]):    
+            if(valid==[]):
+                print("calcul des déplacements continus entre 0 et " + str(i+1))
                 valid = ValidateMovement(MovementList[i-1],MovementList[i])
             else:
+                print("calcul des déplacements continus entre 0 et " + str(i+1))
                 valid = ValidateMovement(valid,MovementList[i])
-    return valid
+        validList.append(valid)
+    return validList
             
 def ValidateMovement(vector1,vector2):
     valid = []
@@ -460,7 +472,8 @@ def ValidateMovement(vector1,vector2):
             valid[count].append(vector2[i][3])
             valid[count].append((vector2[i][4]+vector1[index][4])/2)    
             count=count+1
-            
+        
+    print("Mouvements continus : "+str(len(valid)))
     return valid
         
 
@@ -469,13 +482,45 @@ def compressionVideo(name,ext,imgCount,quality,N,M):
     img1 = getGrayfromNumber(name,1,ext)
     img2 = getGrayfromNumber(name,2,ext)
     VecteurMouvement1 = calculVecteurDeplacement(img0,img1,eq)
+    print("Nombre de mouvements détectés entre 0 et 1 : " + str(len(VecteurMouvement1)))
     VecteurMouvement2 = calculVecteurDeplacement(img1,img2,eq)
+    print("Nombre de mouvements détectés entre 1 et 2 : " + str(len(VecteurMouvement2)))
     
-    if(len(VecteurMouvement1)==0):
-        print("aucun vecteur de mouvement trouvé entre "+getName(name,0)+" et "+getName(name,1))
+    img3Pred = CombineNext(img2,defineNext([VecteurMouvement1,VecteurMouvement2]))
+    plt.imshow(img3Pred,cmap='gray')
+    plt.show()
+   
+    
+def prediction(name,ext,imgCount):
+    if(imgCount<2):
+        print("Nombre d'images insuffisant pour réaliser une prédiction")
         return ;
-    print("Nombre de mouvements détectés : " + str(len(VecteurMouvement)))
+    imgList = []
+    imgList.append(getGrayfromNumber(name,0,ext))
+    img1 = getGrayfromNumber(name,1,ext)
+    imgList.append(img1)
+    Vector = calculVecteurDeplacement(imgList[0],img1,eq)
+    VectorList = []
+    VectorList.append(Vector)
+    print("Mouvements détectés entre 0 et 1 : " + str(len(Vector)))
+    i=2
+    for i in range(2,imgCount):
+        nextImg = getGrayfromNumber(name,i,ext)
+        imgList.append(nextImg)
+        Vector = calculVecteurDeplacement(imgList[i-1],nextImg,eq)
+        VectorList.append(Vector)
+        print("Mouvements détectés entre "+str(i-1)+" et " +str(i)+" : " + str(len(Vector)))
     
+    nexts=defineNext(VectorList)    
+    for i in range(0,len(nexts)):
+        print("prediction de " + getName(name,i+3,ext) + " : ")
+        imgNPred = CombineNext(imgList[i+2],defineNext(next[i]))
+        plt.imshow(imgNPred,cmap='gray')
+        plt.show()
+        
+        
+        
+        
 """
 compression(4,4,"horse.bmp",2,1)    
 compression(8,8,"horse.bmp",2,1) 
@@ -485,8 +530,8 @@ compression(64,64,"horse.bmp",2,1)
 
 #compression(4,4,"horse.bmp",1,1)
 #compareQualityInfluence(0,1)
-compressionVideo("taxi_","bmp",20,1,16,16)
-
+#compressionVideo("taxi_","bmp",20,1,16,16)
+prediction("taxi_","bmp",20)
 """
 Q4 (compression):
     pour n=4:    
