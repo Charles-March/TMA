@@ -1,10 +1,4 @@
-﻿"""
-editeur de Spyder
-
-Ceci est un script temporaire.
-"""
-
-#######To clear the working memory###########
+﻿#######To clear the working memory###########
 def clearall():
     all = [var for var in globals() if var[0] != "_"]
     for var in all:
@@ -17,6 +11,7 @@ import numpy as np
 from skimage.color import rgb2gray
 from skimage import data, measure,io
 import skimage as sk
+import re
 import matplotlib.pyplot as plt
 import PIL as pil #pour utiliser la librairie d'écriture de fichier jpeg
 
@@ -41,6 +36,9 @@ def idct2(x):
 
 plt.close('all')
 
+"""
+@author Charles Marchand - Aymeric Vial-Grelier
+"""
    
 #img = data.astronaut()
 
@@ -274,6 +272,16 @@ def compression(N,M,imgPath,quality,with_print):
         
     return (compression,(finalPsnr))
 
+
+"""
+print a plot of quality / PSNR and compression_rate/PSNR using our compression system
+@param
+    startingValue: The first quality value tested
+    maxValue     : The last quality value tested
+    step         : The step of quality
+    N*M          : Size of blocks
+    img          : The img to test with
+"""
 def ourQualityInfluence(startingValue,maxValue,step,N,M,img):
     compressionArray = np.zeros(int((maxValue-startingValue)/step))
     psnrArray = np.zeros(int((maxValue-startingValue)/step))
@@ -294,6 +302,15 @@ def ourQualityInfluence(startingValue,maxValue,step,N,M,img):
     plt.ylabel('compression_rate / psnr')
     plt.show()
     
+"""
+compress a specified img with a speficied quality using jpeg librairy and return the compression rate and the psnr
+@param
+    img     : the img to compress
+    quality : the quality applyied to the img
+@return
+    compression_ rate : the value of the compression rate
+    psnr              : the value of the psnr
+"""    
 def compresJpeg(img,quality):
     monImlu=io.imread(img)
     img_gray = rgb2gray(monImlu)
@@ -312,7 +329,14 @@ def compresJpeg(img,quality):
     return (compressionRate,psnr)
 
     
-
+"""
+print a plot of quality / PSNR and compression_rate/PSNR using jpeg compression system
+@param
+    startingValue: The first quality value tested
+    maxValue     : The last quality value tested
+    step         : The step of quality
+    img          : The img to test with
+"""
 def jpegQualityInfluence(startingValue,maxValue,step,img):
     compressionArray = np.zeros(int((maxValue-startingValue)/step))
     psnrArray = np.zeros(int((maxValue-startingValue)/step))
@@ -336,6 +360,12 @@ def jpegQualityInfluence(startingValue,maxValue,step,img):
     plt.ylabel('compression_rate / psnr')
     plt.show()
 
+"""
+compare Quality influence on PSNR and compression rate
+@param
+    our  : true if you want to plot our method plots
+    jpeg : true if you want to plot jpeg method plots
+"""
 def compareQualityInfluence(our,jpeg):
     if(our):
         print("\n\n\nInfluence de la qualite sur le psnr pour NOTRE methode")
@@ -344,6 +374,15 @@ def compareQualityInfluence(our,jpeg):
         print("\n\n\nInfluence de la qualite sur le psnr pour la compression JPEG")
         jpegQualityInfluence(1,100,1,"horse.bmp")
 
+"""
+return the name of the desired picture
+@param
+    name : the name of the picture series
+    number : the number of the desired name
+    ext : the extension of the picture series
+@return
+    n : name+number+'.'+ext
+"""
 def getName(name,number,ext):
     n=name
     if(number<10):
@@ -352,20 +391,52 @@ def getName(name,number,ext):
         n=n+str(number)
     return n+"."+ext
 
+"""
+return the float rgb2gray of the img
+@param
+    name : the name of the img to deal with
+@return
+    gray : the float rgb2gray of name img
+"""
 def getGray(name):
     img= io.imread(name)
     gray= rgb2gray(img)
     gray = sk.img_as_float(gray)
     return gray
 
+"""
+return the float rgb2gray of an img designed by a serie name, a number and it extension
+@param 
+    name : name of the picture
+    number : the number of the picture in it serie
+    ext : the ext of the series
+@return
+    gray : the float rgb2gray of the picture
+"""
 def getGrayfromNumber(name,number,ext):
     return getGray(getName(name,number,ext))
 
+"""
+return true if value1=value2
+@param
+    value1 : the first value
+    value2 : the second value
+@return
+    bool : true if value1==value2 else false
+"""
 def eq(value1,value2):
     return (value1==value2)
 
 
-
+"""
+return a movement vector between img0 and img1 using the fun comparaison method
+@param
+    img0 : the first img
+    img1 : the second img
+    fun : the comparaison method
+@return
+    potentialVector : the deplacement vector between img0 and img1
+"""
 def calculVecteurDeplacement(img0,img1,fun):
     img_size = img0.shape
     potentialVector = []
@@ -420,12 +491,28 @@ def calculVecteurDeplacement(img0,img1,fun):
                                     b = 0 
     return potentialVector
 
+"""
+find in tab the value and return it index
+@param
+    value : the value to look for
+    tab : the tab to look in
+@return
+    i : the index of the value
+returns -1 if nothing found
+"""
 def find(value,tab):
     for i in range(0,len(tab)):
         if(tab[i][2]==value[0] and tab[i][3]==value[1]):
             return i
     return -1
-
+"""
+combine and img lastImg and apply the vector movement on it to predict the next img
+@param
+    lastImg : the img to deal with
+    movement : the vector to apply on img
+@return
+    return the potential next img
+"""
 def CombineNext(lastImg,movement):
     newImg = np.copy(lastImg)
     img_size = lastImg.shape
@@ -440,11 +527,17 @@ def CombineNext(lastImg,movement):
             newImg[newValX][newValY] = lastImg[movement[i][2]][movement[i][3]]
         
     return newImg
-
+"""
+define the next vector based on multiples vector
+@param
+    MovementList : a list of vector
+@return
+    validList : A predicted movement vector based on past vectors 
+"""
 def defineNext(MovementList):
     size = len(MovementList)
     validList=[]
-    print("tentative de prédiction avec "+str(size)+" imgs")
+    print("tentative de prédiction avec "+str(size)+" vecteurs")
     if(size>0):
         valid = []
         for i in range(1,size):
@@ -455,9 +548,17 @@ def defineNext(MovementList):
             else:
                 print("calcul des déplacements continus entre 0 et " + str(i+1))
                 valid = ValidateMovement(valid,MovementList[i])
-        validList.append(valid)
+            validList.append(valid)
     return validList
-            
+
+"""
+Look for continious mouvement between vector1 and vector2
+@param
+    vector1 : the first vector
+    vector2 : the second vector
+@return
+    valid : a list of vector which are continious between vector1 and vector2
+"""        
 def ValidateMovement(vector1,vector2):
     valid = []
     count = 0
@@ -475,22 +576,16 @@ def ValidateMovement(vector1,vector2):
         
     print("Mouvements continus : "+str(len(valid)))
     return valid
-        
 
-def compressionVideo(name,ext,imgCount,quality,N,M):
-    img0 = getGrayfromNumber(name,0,ext)
-    img1 = getGrayfromNumber(name,1,ext)
-    img2 = getGrayfromNumber(name,2,ext)
-    VecteurMouvement1 = calculVecteurDeplacement(img0,img1,eq)
-    print("Nombre de mouvements détectés entre 0 et 1 : " + str(len(VecteurMouvement1)))
-    VecteurMouvement2 = calculVecteurDeplacement(img1,img2,eq)
-    print("Nombre de mouvements détectés entre 1 et 2 : " + str(len(VecteurMouvement2)))
+"""
+predict the 2-imgCount last img of a series defined by a name and an extension
+@param
+    name : the name of the img serie
+    ext : the extension of the img serie
+    imgCount : 2-imgCount last img will be predicted
     
-    img3Pred = CombineNext(img2,defineNext([VecteurMouvement1,VecteurMouvement2]))
-    plt.imshow(img3Pred,cmap='gray')
-    plt.show()
-   
-    
+imgCount should be >2
+"""
 def prediction(name,ext,imgCount):
     if(imgCount<2):
         print("Nombre d'images insuffisant pour réaliser une prédiction")
@@ -511,36 +606,82 @@ def prediction(name,ext,imgCount):
         VectorList.append(Vector)
         print("Mouvements détectés entre "+str(i-1)+" et " +str(i)+" : " + str(len(Vector)))
     
-    nexts=defineNext(VectorList)    
+    nexts=defineNext(VectorList) 
     for i in range(0,len(nexts)):
         print("prediction de " + getName(name,i+3,ext) + " : ")
-        imgNPred = CombineNext(imgList[i+2],defineNext(next[i]))
+        imgNPred = CombineNext(imgList[i+2],nexts[i])
         plt.imshow(imgNPred,cmap='gray')
         plt.show()
         
+"""
+Our BEAUTIFUL and PRETTY presentation function
+"""        
+def presentation():
+    print("\n\nBonjour, voici le TP réalisé par Charles Marchand et Aymeric Vial-Grelier")
+    print("Nous allons vous montrer notre calcul de DCT ainsi que la compression d'une image")
+    b=1
+    while(b):        
+        print("\n\nMerci d'indiquer ce que vous voulez sous le format N-M-fichier-compression ")
+        print("Valeurs de base : 8-8-horse.bmp-2, \nEntrez 0 pour utiliser cette configuration")
+        print("Entrez 1 pour passer à l'étape suivante")
+        reponse = input()
+        if(len(reponse)>2):
+            tab=reponse.split("-")
+            if(len(tab)==4):
+                compression(int(tab[0]),int(tab[1]),tab[2],int(tab[3]),1)
+            else:
+                print("mauvais format , exemple : 8-8-horse.bmp-2 ")
+        else:
+            value = int(re.search(r'\d+', reponse).group())
+            if(value==0):
+                compression(8,8,"horse.bmp",2,1) 
+            elif(value==1):
+                b=0
+    
+    print("Réponse a quelque questions :")
+    print("1.Visualisez l'image DCT, quelle conclusion pouvez-vous faire sur la localisation et la répartition des données?")
+    print("On peut voir dans la DCT que l'information est répartie majoritairement en haut à gauche de la DCT")
+    print("C'est ici qu'on peut voir les fréquences faible.")
+    
+    
+    print("\n\n2.D’après vous pourquoi le groupe jpeg a choisi la taille 8 ?")
+    print("Comme l'on peut voir en faisant plusieurs test avec les fonctions de compression, les blocs de tailles 8*8,")
+    print("Donnes un rendu de l'images beaucoup plus satisfant que les autres :")
+    print(" - Les zones dégradés semblent plus jolie que lors des 4*4")
+    print(" - On évite une grande partie de l'effet mousitiques des plus grosses séparation")
+    
+    print("\n\n4.Calculez le taux de compression")
+    print("Pour vérifier les informations suivante regarder le .rar TP_python.rar")
+    print(" pour n=8, qualité=2")
+    print("   - taille de la dct quantifiee compressee : 80 000o")
+    print("   - taille de la dct compressee : 1 884 000o")     
+    print("   - taille de l'image bmp compressee : 200 000o")
+    print(" taux de compression = 2.5 ")
         
-        
-        
-"""
-compression(4,4,"horse.bmp",2,1)    
-compression(8,8,"horse.bmp",2,1) 
-compression(16,16,"horse.bmp",2,1) 
-compression(64,64,"horse.bmp",2,1) 
-"""
+    print("\n\n Appuyer sur entrée pour continuer")
+    input()
+    compareQualityInfluence(0,1)
+    print("5.Conclusion sur ces deux indicateurs ?")
+    print("On peut voir que plus l'on compression l'image plus les indicateurs sont faible")
+    print("aussi plus on augmente la qualité plus le PSNR augmente.")
+    print("Ces indicateurs on donc l'air fiable et représente bien la qualitée réelle d'une image")
+    print("\n\n Appuyer sur entrée pour continuer")
+    input()
+    b=1
+    print("Nous allons maintenant vous présenter notre algorithme de prédiction d'image")
+    while(b):
+        print("\n\nMerci d'indiquer le numéro de l'image à prédire")
+        print("compris entre 3 et 20. Afin de quitter le programme merci d'entrer 0")
+        print("Attention, cela risque d'être long si le nombre est grand, cependant la qualitée de la prédiction augmentera.")
+        reponse = input()
+        value = int(re.search(r'\d+', reponse).group())
+        if(value == 0):
+            b=0
+        elif(value >= 2 and value<=20):
+            prediction("taxi_","bmp",value)
+    print("\n\nMerci, d'avoir suivis notre compte rendu.")
+            
 
-#compression(4,4,"horse.bmp",1,1)
-#compareQualityInfluence(0,1)
-#compressionVideo("taxi_","bmp",20,1,16,16)
-prediction("taxi_","bmp",20)
-"""
-Q4 (compression):
-    pour n=4:    
-        taille de la dct quantifiee compressee : 83 000
-        taille de la dct compressee : 1 000 000
-        taille de l'image bmp compressee : 199 824
-    199824/83000 = 2.4
-"""
-
-
-
-print("execution ended")
+presentation()
+print("\nExecution ended, press enter to exit")
+input()
